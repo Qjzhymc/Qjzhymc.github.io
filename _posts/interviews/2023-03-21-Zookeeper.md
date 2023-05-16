@@ -3,6 +3,7 @@ title: Zookeeper面试题
 author: Yu Mengchi
 categories:
   - Interview 
+  - 面试知识点
 tags:
   - Interview
   - 微服务

@@ -3,6 +3,7 @@ title: SpringBoot面试题
 author: Yu Mengchi
 categories:
   - Interview
+  - 面试知识点
 tags:
   - Interview
   - SpringBoot
