@@ -17,7 +17,7 @@ tags:
 
 ### zookeeper是做什么的？有什么作用？
 
-- 配置文件同一管理
+- 配置文件统一管理
 - 集群管理
 - 分布式锁
 
@@ -44,15 +44,6 @@ tags:
 
 ---
 
-### zookeeper集群中Leader选举过程
-
-- leader election（选举阶段）：只要有一个节点得到超过半数节点的票数，当选准leader
-- discovery（发现阶段）：followers将最近收到的事务提议同步给准leader
-- synchronization（同步阶段）：leader将前一阶段获得的最新的提议历史同步给集群内所有的副本
-- broadcast（广播阶段）：集群对外提供事务服务，leader可以进行消息广播
-
----
-
 ### zookeeper集群为啥最好奇数台？脑裂现象？
 
 首先zoopeeker规定如果集群有机器宕机，那么剩下的机器一定要比宕掉的机器多整个集群才能正常提供服务。
@@ -74,8 +65,12 @@ zookeeper会在集群初始化的时候或者是leader宕机的时候进行leade
 其他服务器比较自己节点信息和其他节点的信息，比较myid和zxid，更新自己的投票，投票会进行很多轮，每轮都统计投票结果，当有超过半数的机器都有相同的投票结果的时候，就说明选举出了leader，否则继续
 投票。确定了leader之后，就更新自己的服务器状态，有leading、following、observing。
 
-### 
 
+### zookeeper集群中Leader选举过程
 
+- leader election（选举阶段）：只要有一个节点得到超过半数节点的票数，当选准leader
+- discovery（发现阶段）：followers将最近收到的事务提议同步给准leader
+- synchronization（同步阶段）：leader将前一阶段获得的最新的提议历史同步给集群内所有的副本
+- broadcast（广播阶段）：集群对外提供事务服务，leader可以进行消息广播
 
 

@@ -22,8 +22,13 @@ IoC的作用就是双方之间不相互依赖，由第三方容器来管理相�
 
 IoC是一种设计思想，或者说是设计模式，实现IoC的最常见以及最合理的实现方式就是依赖注入（DI）
 
+DI：依赖注入就是指在创建对象时，Spring容器会自动将该对象所依赖的其他对象注入到它里面，
+
 
 AOP是指面向切面编程，
+使用@Aspect注解表示一个切面类，再在@Before，@AfterReturning，@AfterThrowing注解对应方法，定义不同的通知类型，定义切面和增强操作。
+
+Spring实现AOP的核心原理是动态代理和增强器。
 
 ---
 
@@ -31,12 +36,30 @@ AOP是指面向切面编程，
 
 IOC容器的本质就是初始化BeanFactory和ApplicationContext，
 
+1. 首先，SpringBoot会加载所有的配置文件，包括application.properties和application.yml等。
+
+2. 接着，SpringBoot会扫描所有的类，查找带有@SpringBootApplication注解的类。
+
+3. 然后，SpringBoot会创建一个Spring应用程序上下文，该上下文包含了所有的Bean定义。
+
+4. SpringBoot会自动配置所有的Bean，包括数据源、Web服务器、日志等。
+
+5. 最后，SpringBoot会启动Web服务器，监听HTTP请求。
+
+在启动过程中，SpringBoot会自动配置很多东西，大大简化了开发者的工作。同时，SpringBoot还提供了很多插件和工具，帮助开发者更加方便地开发和部署应用程序。
+
 ---
 
 ### Spring的自动装配原理？
+Spring的自动装配原理是通过扫描应用上下文中的bean定义，自动将符合条件的bean注入到需要依赖它们的bean中。Spring的自动装配有三种方式：
 
+1. 根据名称自动装配：Spring会自动查找与需要依赖的bean名称相同的bean，并将其注入到需要依赖它的bean中。
 
+2. 根据类型自动装配：Spring会自动查找与需要依赖的bean类型相同或是其子类的bean，并将其注入到需要依赖它的bean中。
 
+3. 根据注解自动装配：Spring会自动查找被特定注解修饰的bean，并将其注入到需要依赖它的bean中。
+
+在进行自动装配时，Spring会根据bean的依赖关系自动确定注入顺序，并在需要时执行类型转换。如果存在多个符合条件的bean，则需要使用@Qualifier注解或者@Primary注解来指定具体使用哪个bean进行注入。
 ---
 
 ### SpringBoot常用的注解有哪些？讲讲原理？
@@ -65,12 +88,32 @@ IOC容器的本质就是初始化BeanFactory和ApplicationContext，
 ---
 
 ### @Resource 和 @Autoware注入有什么区别？
+@Resource 和 @Autowired 是用于依赖注入的注释。它们的主要区别在于：
 
+1. 来源不同：@Resource 是来自于Java EE规范的注释，而@Autowired 是Spring框架提供的注释。
+
+2. 自动装配方式不同：@Resource 默认按照名称进行自动装配，如果找不到对应名称的bean，则会按照类型进行匹配。而@Autowired 默认按照类型进行自动装配，如果找不到对应类型的bean，则会报错。
+
+3. 可以注入的类型不同：@Resource 可以注入任意类型的bean，而@Autowired 只能注入Spring容器中存在的bean。
+
+4. 配置方式不同：@Resource 需要指定name或者type属性来指定要注入的bean，而@Autowired 可以通过required属性来控制是否必须注入，也可以通过@Qualifier注释来指定要注入的bean的名称。
 
 ---
 
 ### Bean的生命周期？
+Bean的生命周期包括以下阶段：
 
+1. 实例化：当Spring容器启动时，它会创建所有配置的Bean实例。
+
+2. 属性注入：在实例化Bean后，Spring容器将会注入Bean的属性。
+
+3. 初始化：在Bean的属性注入完成后，Spring容器会调用Bean的初始化方法。
+
+4. 使用：此时Bean已经可以被其他对象使用。
+
+5. 销毁：当Spring容器关闭时，它会销毁所有的Bean实例，同时调用Bean的销毁方法。
+
+需要注意的是，Bean的生命周期可以通过实现Spring的Bean生命周期接口来自定义。例如，可以在Bean的初始化方法中执行一些特定的操作，或者在销毁方法中释放资源。
 ### Spring如何解决循环依赖的？
 
 如果有两个或两个以上的对象互相依赖对方，形成闭环就会出现循环依赖。就会导致对象的创建过程产生死循环。
