@@ -35,3 +35,65 @@ https://blog.csdn.net/Mrzhang567/article/details/122489796
 设置一个配置为true
 https://blog.csdn.net/u013360850/article/details/80373604
 7. 最后重启docker内的nacos。
+
+启动nacos时用下面命令
+docker run --name nacos -d -p 8848:8848 --privileged=true --restart=always -e JVM_XMS=256m -e JVM_XMX=256m -e MODE=standalone -e PREFER_HOST_MODE=nacos  zhusaidong/nacos-server-m1:2.0.3
+
+### docker 部署nginx
+
+1. 拉取nginx镜像
+docker pull nginx:latest
+2. 启动
+3. 修改配置文件/etc/nginx/conf.d/default.conf,主要是/api/的配置，会将对localhost/8080/api/的请求转发到172.20.10.5:8090，172.20.10.5:8090是本地服务的端口
+4. 将前端压缩文件放在/usr/share/nginx/html/目录下，启动nginx后，访问localhost/8080/api/会访问后端服务
+
+server {
+listen       80;
+listen  [::]:80;
+server_name  localhost;
+
+    #access_log  /var/log/nginx/host.access.log  main;
+
+    location / {
+        root   /usr/share/nginx/html;
+        index  index.html index.htm;
+    }
+
+    location /api/ {
+        proxy_pass http://172.20.10.5:8090/;
+      }
+
+    #error_page  404              /404.html;
+
+    # redirect server error pages to the static page /50x.html
+    #
+    error_page   500 502 503 504  /50x.html;
+    location = /50x.html {
+        root   /usr/share/nginx/html;
+    }
+
+    # proxy the PHP scripts to Apache listening on 127.0.0.1:80
+    #
+    #location ~ \.php$ {
+    #    proxy_pass   http://127.0.0.1;
+    #}
+
+    # pass the PHP scripts to FastCGI server listening on 127.0.0.1:9000
+    #
+    #location ~ \.php$ {
+    #    root           html;
+    #    fastcgi_pass   127.0.0.1:9000;
+    #    fastcgi_index  index.php;
+    #    fastcgi_param  SCRIPT_FILENAME  /scripts$fastcgi_script_name;
+    #    include        fastcgi_params;
+    #}
+
+    # deny access to .htaccess files, if Apache's document root
+    # concurs with nginx's one
+    #
+    #location ~ /\.ht {
+    #    deny  all;
+    #}
+}
+
+
