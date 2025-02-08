@@ -83,4 +83,4 @@ zookeeper会在集群初始化的时候或者是leader宕机的时候进行leade
 - broadcast（广播阶段）：集群对外提供事务服务，leader可以进行消息广播。
 
 
-> [ZooKeeper:Wait-free coordination for Internet-scale systems] (http://web.eecs.umich.edu/~manosk/assets/slides/f21/zookeeper.pdf)
+>[ZooKeeper:Wait-free coordination for Internet-scale systems](http://web.eecs.umich.edu/~manosk/assets/slides/f21/zookeeper.pdf)
