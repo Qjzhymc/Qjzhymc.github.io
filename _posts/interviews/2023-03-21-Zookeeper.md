@@ -17,11 +17,11 @@ tags:
 
 ### zookeeper的核心原理是什么？
 
-zookeeper的核心原理是ZAB协议，它是一种专门为分布式协调设计的原子广播协议。ZAB通过一下机制保证数据一致性。
+zookeeper的核心原理是ZAB协议，它是一种专门为分布式协调设计的原子广播协议。ZAB通过以下机制保证数据一致性。
 
-- 1.消息广播机制：所有的写请求由leader节点处理，通过两阶段提交（Proposal + commit）广播到集群，确保半数以上节点确认后再提交事务，避免数据不一致；
-- 2.崩溃恢复模式：当leader失效时，ZAB通过选举新leader并同步历史事务日志（ZXID）恢复状态，确保事务顺序性和全局一致性；
-- 3.ZXID全局递增：每个事务分配唯一的64位ZXID（高32位为epoch，低32位为事务序号），保证操作顺序和因果性。
+- 消息广播机制：所有的写请求由leader节点处理，通过两阶段提交（Proposal + commit）广播到集群，确保半数以上节点确认后再提交事务，避免数据不一致；
+- 崩溃恢复模式：当leader失效时，ZAB通过选举新leader并同步历史事务日志（ZXID）恢复状态，确保事务顺序性和全局一致性；
+- ZXID全局递增：每个事务分配唯一的64位ZXID（高32位为epoch，低32位为事务序号），保证操作顺序和因果性。
 
 ---
 
@@ -83,3 +83,4 @@ zookeeper会在集群初始化的时候或者是leader宕机的时候进行leade
 - broadcast（广播阶段）：集群对外提供事务服务，leader可以进行消息广播。
 
 
+> [ZooKeeper:Wait-free coordination for Internet-scale systems] (http://web.eecs.umich.edu/~manosk/assets/slides/f21/zookeeper.pdf)
