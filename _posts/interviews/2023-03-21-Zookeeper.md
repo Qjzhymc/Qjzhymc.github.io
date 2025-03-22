@@ -83,4 +83,41 @@ zookeeper会在集群初始化的时候或者是leader宕机的时候进行leade
 - broadcast（广播阶段）：集群对外提供事务服务，leader可以进行消息广播。
 
 
+
+### ZooKeeper的Leader选举具体过程有哪些？
+
+1. 初始化选举状态
+- 每个节点启动时都处于LOOKING状态
+- 设置自己的选票(myid, zxid)为初始选票
+- zxid代表节点的事务ID，值越大说明数据越新
+
+2. 第一轮投票
+- 每个节点先投票给自己
+- 将投票信息(myid, zxid)广播给其他节点
+- 收到投票后,保存到本地投票箱
+
+3. 选票PK规则
+- 优先比较zxid，较大者胜出
+- zxid相同时，比较myid，较大者胜出
+- 根据PK结果更新自己的投票
+
+4. 统计投票
+- 每轮投票后统计是否有超过半数的相同投票
+- 若有节点得票超过半数，该节点当选Leader
+- 否则进入下一轮投票
+
+5. 选举完成
+- 当选Leader的节点状态变更为LEADING
+- 其他节点状态变更为FOLLOWING
+- Observer节点不参与投票,状态为OBSERVING
+
+举例说明:
+假设有3个节点,myid分别为1、2、3,zxid都相同:
+1. 第一轮每个节点投自己
+2. 收到其他投票后,按照PK规则都会选择myid=3的节点
+3. 第二轮投票全部投给节点3
+4. 节点3得到超过半数选票,当选Leader
+
+
+
 >[ZooKeeper:Wait-free coordination for Internet-scale systems](http://web.eecs.umich.edu/~manosk/assets/slides/f21/zookeeper.pdf)
