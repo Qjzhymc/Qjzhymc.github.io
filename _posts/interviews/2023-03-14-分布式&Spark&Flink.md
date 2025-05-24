@@ -50,12 +50,14 @@ tags:
 
 如何保证AP：保证AP意味着需要接收一定程度上的数据不一致。最终一致性模型
 - 异步复制：主节点处理写请求，并同步到副本节点。
+
 如何保证CP：牺牲一定的可用性，发生网络分区时，某些服务暂时不可用直到分区解决。
 - 同步复制：所有写操作必须被所有副本确认后才算成功完成，保证强一致性
 - Paxos/Raft算法
 - 两阶段提交2PC
 
 > 对于一致性要求极高的交易性数据采用CP模式；
+
 > 对于用户体验影响较大但实时性要求较高的查询采用AP模式；
 
 ---
@@ -82,7 +84,7 @@ Paxos将节点分成三个角色：Proposer、Acceptor、Learner
 1. 内存管理：Spark依赖内存，配置集群的内存设置是很重要的
 - 配置合理的Executor和Driver内存大小(通过spark.executor.memory和spark.driver.memory)
 - 尽量减少Shufffle操作：控制Shuffle操作的数量，因为Shuffle会消耗大量内存
-- 选择合适的序列化：Spark使用序列化在集群节点间传输数据，使用Kryo序列化(spark.serializer=org.apache.spark.serializer.KryoSerializer)以减少序列化和反序列化的开销
+- 选择合适的序列化：Spark使用序列化在集群节点间传输数据，使用Kryo序列化(spark.serializer=org.apache.spark.serializer.KryoSerializer)减少序列化和反序列化的开销
 2. 数据分区：Spark将数据分区到集群的不同的节点上，并行处理，理解数据是怎么分区的，怎么控制分区实现最优性能表现
 - 确保分区数量合理。分区过多会导致过多的任务调度开销；分区过少会降低并行度；
 - 使用repartition或coalesce调增分区数，但要注意repartition会触发Shuffle，而coalesce不会
@@ -116,7 +118,7 @@ large_table = sc.parallelize([(1, "x"), (2, "y"), (3, "z"), (4, "w"), (5, "v")])
 result = large_table.map(lambda x: (x[0], (x[1], broadcast_table.value.get(x[0])))).collect()
 ```
 
-> 在join操作时，也可以手动关播小表，显示调用broadcast(smallDF)函数；spark.sql.autoBroadcastJoinThreshold广播阈值参数设置小表大小阈值；如果小表还是很大，但还是想广播，可以压缩小表；
+> 在join操作时，也可以手动广播小表，显示调用broadcast(smallDF)函数；spark.sql.autoBroadcastJoinThreshold广播阈值参数设置小表大小阈值；如果小表还是很大，但还是想广播，可以压缩小表；
 
 ---
 ### Spark遇到数据倾斜怎么处理？
@@ -200,7 +202,11 @@ object DataSkewHandling {
 }
 ```
 
-> 注意如果原始key中就有"_"符号，那么在恢复原始key时会出现错误，这个时候可以(1)使用key中不存在的字符拼接随机前缀和key；(2)使用截取固定长度获取原始key，比如随机前缀是1长度，则获取1后面的字符串为原始key；
+> 注意如果原始key中就有"_"符号，那么在恢复原始key时会出现错误，这个时候可以
+ 
+> (1)使用key中不存在的字符拼接随机前缀和key；
+
+> (2)使用截取固定长度获取原始key，比如随机前缀是1长度，则获取1后面的字符串为原始key；
 
 ---
 ### Spark的架构和组件？
@@ -227,19 +233,14 @@ object DataSkewHandling {
 3. Task是运行在Executor上的实际最小执行单元
 
 ---
-### Spark的基本数据结构？RDD、DataFrame和DataSet
-
-- RDD：表示一个分布式数据集合，支持两种操作，Transformation(map,filter,flatMap)、Action(collect,count,saveAsTextFile)，不可变，但是可以通过转换操作生成新的RDD；弹性的，支持自动容错和数据恢复；分布式的，数据分布在多个节点上；可以从HDFS数据源加载数据；
-- DataFrame：类似于数据库的表，支持SQL操作；高效查询；支持SQL查询；支持DataFrame操作，select,filter,join,groupBy
-- DataSet：类型安全的数据集合，结合了RDD和DataFrame的优点，适合需要类型安全和高性能优化的场景。
-
----
 ### Spark SQL
 
 ---
 ### Spark的优化和调优？数据倾斜、并行度、数据压缩、缓存
 executor memory
+
 number of executors
+
 Spark有很多可以调优的配置参数，以下是一些常用的参数：
 1. spark.driver.memory：设置Driver进程的内存大小，可以根据具体应用场景进行调整。
 2. spark.executor.memory：设置每个Executor进程的内存大小，可以根据机器配置和任务需求进行调整。
@@ -290,6 +291,153 @@ Spark有很多可以调优的配置参数，以下是一些常用的参数：
    针对以上问题，需要根据具体情况采取相应的优化措施，以保证Flink任务的稳定性和高效性。
 
 ---
+### Flink状态后端(State Backend)是什么？
+1. MemoryStateBackend：适合测试环境，存储小状态
+ - 状态存储在JobManager的内存
+ - checkpoint存储在JobManager的内存
+2. FsStateBackend
+ - 状态存储在TaskManager内存或堆外内存
+ - checkpoint存储在外部文件系统(HDFS)
+3. RocksDBStateBackend:适合生产环境，存储大的状态
+ - 状态存储在TaskManager本地RocksDB
+ - checkpoint存储在外部文件系统(HDFS)
+
+---
+### ValueState、ValueStateDescriptor
+两个都是用于状态管理的组件，可以保存和访问每个键的状态数据。
+1. ValueState：是一个接口，表示一个可以存储单个值的状态。比如在计算每个用户的累计积分时，可以使用ValueState<Integer>来存储每个用户的当前积分
+ - value():获取当前状态的值。如果之前没有设置过值，则返回null；
+ - update(T value):更新状态的值
+ - clear():清除当前状态
+2. ValueStateDescriptor：是用来创建ValueState实例的描述符类，定义了状态的名字、类型信息。如果要使用状态，首先需要定义一个ValueStateDescriptor，然后通过这个描述符来获取相应的ValueState实例。
+
+---
+### WindowFunction、ProcessWindowFunction
+都适用于对窗口内数据进行处理的函数。
+1. WindowFunction:访问窗口的结果以及一些元数据(窗口的开始和结束时间)。
+```java
+    /**
+ * Evaluates the window and outputs none or several elements.
+ *
+ * @param key The key for which this window is evaluated.窗口的键
+ * @param window The window that is being evaluated.当前正在处理的窗口
+ * @param input The elements in the window being evaluated.该窗口中的所有元素
+ * @param out A collector for emitting elements.用来输出结果的收集器
+ * @throws Exception The function may throw exceptions to fail the program and trigger recovery.
+ */
+    void apply(KEY key, W window, Iterable<IN> input, Collector<OUT> out) throws Exception;
+```
+2. ProcessWindowFunction：是一个更强大的接口，提供更多的控制和上下文信息，可以提供窗口执行的信息，包括状态和触发器相关的上下文。
+```java
+  /**
+   * Evaluates the window and outputs none or several elements.
+   *
+   * @param key The key for which this window is evaluated.
+   * @param context The context in which the window is being evaluated.提供窗口状态、当前处理时间、当前watermark值等上下文信息
+   * @param elements The elements in the window being evaluated.包含窗口中的所有元素
+   * @param out A collector for emitting elements. 用来输出结果的收集器
+   * @throws Exception The function may throw exceptions to fail the program and trigger recovery.
+   */
+  public abstract void process(
+          KEY key, Context context, Iterable<IN> elements, Collector<OUT> out) throws Exception;
+```
+
+---
+### DataStreamSource、DataStream、KeyedStream、WindowedStream
+1. DataStreamSource：表示数据流的源头，负责从外部系统(比如Kafka、文件、Socket)读取数据
+```java
+StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
+// 从 Kafka 读取
+Properties props = new Properties();
+props.setProperty("bootstrap.servers", "localhost:9092");
+DataStreamSource<String> kafkaStream = env.addSource(
+    new FlinkKafkaConsumer<>("topic", new SimpleStringSchema(), props));
+```
+2. DataStream：通用数据流，表示一个无限的、连续的数据流，是所有流操作的基础，支持各种转换操作(map,filter,keyBy)
+3. KeyedStream:按键分区的数据流，将数据流按键进行分区，确保相同键的数据由同一个实例处理
+ - 通过KeyBy(event -> event.getUserId()方法得到
+ - 后续操作只能应用键控操作(比如window，process),不能直接调用非键控操作(如union)
+4. WindowedStream: 表示将无限流按时间或数量划分为有限的"桶"，便于批量处理
+ - 窗口创建后，需通过apply、reduce等方法定义窗口内数据的处理逻辑
+ - 窗口类型有很多种，比如支持滚动窗口、滑动时间窗口、会话窗口
+
+```java
+KeyedStream<MyEvent, String> keyedStream = ...;
+
+// 滚动时间窗口（每 5 分钟一个窗口）
+WindowedStream<MyEvent, String, TimeWindow> tumblingWindow = 
+    keyedStream.window(TumblingEventTimeWindows.of(Time.minutes(5)));
+
+// 滑动时间窗口（窗口大小 10 分钟，滑动步长 5 分钟）
+WindowedStream<MyEvent, String, TimeWindow> slidingWindow = 
+    keyedStream.window(SlidingProcessingTimeWindows.of(Time.minutes(10), Time.minutes(5)));
+
+// 会话窗口（根据活动时间动态划分窗口）
+WindowedStream<MyEvent, String, TimeWindow> sessionWindow = 
+    keyedStream.window(EventTimeSessionWindows.withGap(Time.minutes(10)));
+```
+
+> DataStreamSource(源头)->DataStream(通用流)->KeyedStream(按键分区)->WindowedStream(窗口化)
+
+---
+### keyBy、process、filter、window、trigger、connect、map、reduce
+1. map(MapFunction<T, R> mapper):对每个元素应用函数，转换为新元素
+
+2. filter(FilterFunction<T> filter):过滤元素，保留满足条件的元素
+
+3. keyBy(KeySelector<T, K> key):将数据流按键分区，相同键的元素进入同一分区
+
+4. window(TumblingProcessingTimeWindows.of(Time.days(1), Time.hours(-8))):将键控流划分为窗口
+在KeyedStream类里window方法的定义如下，可以看到返回的是WindowedStream：
+```java
+    public <W extends Window> WindowedStream<T, KEY, W> window(
+            WindowAssigner<? super T, W> assigner) {
+        return new WindowedStream<>(this, assigner);
+    }
+```
+
+5. trigger(ContinuousProcessingTimeTrigger.of(Time.seconds(30)))：自定义窗口触发时机
+在WindowedStream类里的trigger方法定义如下，
+```java
+    public WindowedStream<T, K, W> trigger(Trigger<? super T, ? super W> trigger) {
+        builder.trigger(trigger);
+        return this;
+    }
+```
+
+6. reduce方法，位于WindowedStream类内：对窗口内元素进行增量聚合(如求和、最大值)
+使用代码如下：
+```java
+windowedStream.reduce((x: EmiBillingInfo, y: EmiBillingInfo) => x.reduce(y), new CacheFilterProcessWindowFunction[EmiBillingInfo, EmiBillingInfo, String, TimeWindow] {
+   override protected def transfer(in: EmiBillingInfo): EmiBillingInfo = in
+
+                override protected def extractKey(input: EmiBillingInfo): String = input.redisValue()
+            })
+```
+
+源代码定义如下：
+```java
+public <R> SingleOutputStreamOperator<R> reduce(
+        ReduceFunction<T> reduceFunction, WindowFunction<T, R, K, W> function) {
+
+    TypeInformation<T> inType = input.getType();
+    TypeInformation<R> resultType = getWindowFunctionReturnType(function, inType);
+    return reduce(reduceFunction, function, resultType);
+}
+```
+
+7. process(ProcessFunction<T, R> processFunction):对每个元素处理，输出0个或多个元素
+8. connect(DataStream<R> dataStream):连接两个数据流，保留各自类型，可共享状态
+
+> 基础转换(map, filter)
+
+> 分区和窗口(keyBy,window)
+ 
+> 聚合与处理(reduce，process)
+
+> 双流操作(connect)
+
+---
 ### 数据仓库和数据湖的区别？
 数据湖主要存放的是非结构化或半结构化数据。例如log文件、社交媒体数据、传感器数据等。
 
@@ -299,3 +447,31 @@ Yes, I am familiar with OCPX advertising.
 OCPX stands for "Optimized Cost Per Click," which is a type of advertising model that uses machine learning algorithms to optimize the cost per click of an ad campaign. 
 With OCPX, the advertiser sets a target cost per click, and the algorithm automatically adjusts the bid for each ad placement based on the likelihood of a click and the value of that click to the advertiser. 
 This helps to maximize the return on investment (ROI) of the ad campaign and improve the overall performance of the advertising strategy.
+
+---
+### 什么是PID控制
+pid是一种竞价广告的出价调整算法，根据广告的roi表现和目标roi的差距，实时微调出价。如果roi偏低，就降价，如果偏高就加价。目标是在不断变化的环境中，让投放始终稳定在理想状态。防止流量波动导致成本超支
+
+---
+### 超成本、欠成本、OCPM赔付
+系统需要通过算法预估和动态调价，让"实际转化成本"围绕广告主设定的"目标成本"上下波动，但是在冷启动阶段，模型数据少、转化数据回传延迟等问题，导致波动
+
+1. 超成本：实际转化成本>广告主设定的目标成本。
+ - 对于广告主：预算浪费、ROI暴跌，尤其对中小商家致命
+ - 模型数据少导致平台算法预估偏差
+2. 欠成本：实际转化成本小于目标成本
+ - 对于平台：优质流量被贱卖，挤压平台利润空间
+3. OCPM赔付：广告平台为了减弱广告主投放时对超成本的顾虑，同时为模型波动等问题进行兜底，平台对广告投放前14天，当超成本率大于20%时，对超出成本的部分进行赔付
+
+---
+### lookalike
+
+---
+### 召回-粗排-精排
+
+---
+### 混排
+比如在信息流推荐场景下，推荐系统会返回一个推荐列表，广告系统会返回一个广告列表，需要综合考虑推荐和广告的组合结果。
+
+---
+### 对oCPM的理解
