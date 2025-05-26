@@ -262,6 +262,98 @@ Spark有很多可以调优的配置参数，以下是一些常用的参数：
 ### Spark的实战应用
 
 ---
+### Spark工作流程
+
+---
+### Spark shuffle是什么？哪些操作会触发shuffle？为什么shuffle对性能影响巨大？
+本质是数据重分布过程，需要讲分散在集群不同节点上的数据按照特定规则进行重组时，就需要shuffle
+
+会触发shuffle的操作：
+1. repartition
+2. 聚合操作：groupByKey,reduceByKey,aggregateByKey
+3. 关联操作：join,cogroup
+4. 去重和排序：distinct,sortByKey
+
+以下操作不会触发shuffle：
+1. 转换操作：map,filter,flatMap
+2. 就地压缩：coalesce(shuffle=false)
+3. 合并操作：union
+
+shuffle影响性能的核心原因
+1. 磁盘IO：中间结果需写入磁盘
+2. 网络传输：数据需跨节点传输
+3. 序列化开销：数据序列化和反序列化
+4. 内存压力：聚合操作需大量内存
+
+---
+### 描述Spark Shuffle的演变历程，并比较不同shuffle实现的优缺点
+1. 第一代：Hash-based Shuffle
+ - 工作原理：每个Map任务为每个Reduce任务创建一个文件
+ - 文件数量：M*R个文件
+ - 优点：实现简单，不需要排序
+ - 缺点：产生大量小文件，导致严重的文件系统压力和内存开销
+2. 第二代：Sort-based Shuffle
+ - 工作原理：每个Map任务只生成一个数据文件和一个索引文件
+ - 文件数量：2*M个文件
+ - 优点：减少文件数量，缓解文件系统压力
+ - 缺点：额外的排序开销，内存使用增加
+3. 第三代：Tungsten-Sort Shuffle
+ - 工作原理：利用堆外内存和二进制格式处理数据
+ - 优点：内存使用更高效，GC压力减小，排序性能更好
+ - 缺点：实现复杂，对序列化有特定要求
+
+---
+### 描述Shuffle的write和read过程
+Shuffle Write流程：
+1. Map任务执行：首先执行Map阶段的计算逻辑
+2. 内存缓冲：结果写入内存缓冲区(由spark.shuffle.file.buffer控制，默认32KB)
+3. 排序分区：在Sort-based Shuffle中，对缓冲数据按partition ID进行排序
+4. 溢出写入：当内存缓冲区达到阈值时，溢出到磁盘
+5. 合并文件：Map任务完成时，所有溢出文件合并为一个文件
+6. 生成索引：创建索引文件，记录每个分区的偏移量
+
+Shuffle Read流程：
+1. 获取数据位置：Reduce任务从MapOutputTracker获取数据位置信息；
+2. 拉取数据：通过BlockManager和TransferService拉取远程数据
+3. 聚合处理
+4. 外部排序：如果数据过大无法放入内存，使用外部排序
+5. 结果计算：完成Reduce逻辑计算并输出结果
+
+---
+### Spark Shuffle的关键配置参数有哪些
+
+1. spark.shuffle.file.buffer:Map端写缓冲区大小
+2. spark.reducer.maxSizeInFlight:Reduce端单次请求最大数据量
+3. spark.shuffle.io.maxRetries:Shuffle读取失败最大重试次数
+4. spark.shuffle.io.retryWait:重试等待时间
+5. spark.shuffle.compress:是否压缩Shuffle输出
+6. spark.shuffle.spill.compress:是否压缩溢出文件
+7. spark.shuffle.service.enabled:是否启用外部shuffle服务
+8. spark.sql.shuffle.partitions:SQL操作的shuffle分区数
+9. spark.shuffle.sort.bypassMergeThreshold:绕过排序的分区阈值
+
+---
+### 如何识别Spark Shuffle过程中的数据倾斜问题？
+1. 观察任务执行时间
+ - Spark UI中查看Stage的任务执行时间分布
+ - 如果某些任务执行时间远大于平均水平(如10倍以上)
+2. 检查Shuffle数据量
+ - 查看Spark UI中的Shuffle Read Size
+ - 观察各任务读取数据量是否严重不均
+3. 分析Key分布：
+ - 对原始数据或抽样数据统计Key的分布情况
+ - 采样分析: rdd.map(x => (x._1, 1)).countByKey()
+
+如何处理数据倾斜：
+1. 预聚合+二次聚合
+
+2. 随机前缀+扩容
+
+3. 使用广播变量优化Join：
+
+4. 使用Spark SQL的AQE功能
+
+---
 ### Flink有哪些优化的措施
 以下是一些Flink可以进行的优化措施：
 
@@ -438,6 +530,66 @@ public <R> SingleOutputStreamOperator<R> reduce(
 > 双流操作(connect)
 
 ---
+### 什么是Flink窗口，为什么流处理需要窗口？Flink支持哪些类型的窗口？
+将无界数据流切分成数据块进行处理，在窗口上执行聚合操作。
+
+1. 滚动窗口Tumbling Window：固定大小，不重叠
+
+2. 滑动窗口Sliding Window：固定大小，可重叠
+
+3. 会话窗口Session Window：活动间隙界定，大小不固定
+
+---
+### Watermark生成机制，Watermark是怎么生成的？
+1. 周期性生成：按照固定的时间间隔自动生成和发出
+2. 标点式生成：有数据流中的特定标记事件触发
+3. 自定义生成
+
+---
+### watermark如何解决乱序问题
+1. 延迟窗口触发：给予迟到数据一定的等待时间
+2. 处理迟到数据：通过side output或更新结果处理超过水位线的数据
+
+---
+### Flink有哪些时间语义？什么是watermark？如何解决数据乱序问题？
+有三种时间语义
+1. 处理时间Processing Time：数据被处理时的系统时间
+2. 事件时间Event Time：数据实际产生时的时间(数据自带时间戳)
+3. Ingestion Time：数据进入Flink系统的时间
+
+> 事件时间是最符合业务语义的，但也面临数据延迟和乱序问题，所以有watermark机制
+
+watermark本质上是一个时间戳标记，表示小于此时间戳的数据应该已经到达，可以安全触发所有截止时间小于等于T的窗口计算
+
+---
+### Flink窗口在内部是如何实现的？窗口计算的生命周期是怎样的？
+窗口操作通常由以下核心组件协同工作：
+1. 窗口分配器(WindowAssigner)：决定元素被分配到哪些窗口
+2. 触发器(Trigger):决定何时计算窗口结果
+3. 窗口函数(Window Function):定义窗口计算逻辑
+4. 移除器(Evictor):可选组件，用于在窗口函数前后移除元素
+
+一个典型窗口操作的生命周期如下：
+1. 窗口创建：数据到达时，窗口分配器决定它属于哪个窗口，必要时创建新窗口；
+2. 数据累积：数据被添加到对应窗口的状态中
+3. 触发计算：当满足触发条件时(如Watermark越过窗口结束时间),触发器启动计算
+4. 窗口函数执行：对窗口中累积的数据进行聚合计算
+5. 结果输出：计算结果被发送到下游
+6. 窗口清理：窗口资源被释放，状态被清除
+
+---
+### 滑动窗口和滚动窗口，什么场景下应该选择哪种窗口？
+1. 滚动窗口
+ - 固定大小、无重叠
+ - 每个元素只会分配到一个窗口
+ - 适合于周期性聚合计算：如每小时统计、每天汇总
+2. 滑动窗口
+ - 大小固定、可以重叠
+ - 每个元素可能分配到多个窗口
+ - 由两个参数定义：窗口大小和滑动间隔
+ - 适用于滚动平均类计算，比如"每分钟计算过去5分钟数据"
+
+---
 ### 数据仓库和数据湖的区别？
 数据湖主要存放的是非结构化或半结构化数据。例如log文件、社交媒体数据、传感器数据等。
 
@@ -475,3 +627,11 @@ pid是一种竞价广告的出价调整算法，根据广告的roi表现和目�
 
 ---
 ### 对oCPM的理解
+
+---
+### 明投和暗投
+主要区别在于广告主对投放渠道的控制程度；
+
+明投是由广告主通过广告平台自主选择投放渠道，指定广告展示的媒体或关键词展示广告；
+
+暗投是由广告平台选择投放渠道，广告主无法完全掌控实际投放渠道，需要依赖平台的流量分配机制。

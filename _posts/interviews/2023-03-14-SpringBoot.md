@@ -30,6 +30,9 @@ IoC是一种设计思想，或者说是设计模式，实现IoC的方式就是�
 DI：依赖注入就是指在创建对象的时候，Spring容器会自动将该对象所依赖的其他对象注入进来。
 
 ---
+### 设计一个容量不超过10的IOC容器(BeanFactory)
+
+---
 ### spring中的AOP是什么？如何实现AOP？
 
 AOP是spring框架的一个很重要的特性，叫面向切面编程。AOP会将一些通用的功能抽取出来，比如日志记录、事务管理，封装到一个可重用模块，这个可重用模块就叫切面，然后以切面的形式应用到不同的对象上，
@@ -61,6 +64,21 @@ Spring实现AOP的核心原理是动态代理和增强器。
 无论采用哪种方式，实现AOP的关键是定义切面（Aspect）、通知（Advice）和连接点（Pointcut）。切面定义了横切关注点的行为，通知定义了切面在何时执行，连接点定义了切面将被织入到哪些方法上。
 
 需要注意的是，AOP旨在提供横切关注点的复用和集中管理，常见的应用场景包括日志记录、性能监测、事务处理等。
+
+---
+### 什么时候会用到AOP，原理是什么？
+
+---
+### 不用代理模式怎么实现AOP？
+
+---
+### 静态代理和动态代理的区别？
+
+---
+### 动态代理在Spring AOP中的应用及性能影响？
+
+---
+### Spring MVC处理流程？
 
 ---
 ### SpringBoot是如何启动的？启动流程
@@ -99,7 +117,6 @@ SpringBootStarter：
 自定义自动配置：
 
 ---
-
 ### SpringBoot常用的注解有哪些？讲讲原理？
 
 启动类会用的@SpringBootApplication，
@@ -115,6 +132,9 @@ web开发的有@RestController，@Service，@GetMapping、@PostMapping。还有@
 还有@Value注入配置文件的属性值，@ConfigurationProperties批量绑定配置文件属性到java对象
 
 还有@Scheduled根据注解中的配置定期执行方法，@Async异步执行，方法放入线程池中异步执行。
+
+---
+### @Data注解作用于哪个阶段
 
 ---
 ### 将一个类声明为bean的注解有哪些？
@@ -142,7 +162,9 @@ web开发的有@RestController，@Service，@GetMapping、@PostMapping。还有@
 4. 配置方式不同：@Resource 需要指定name或者type属性来指定要注入的bean，而@Autowired 可以通过@Qualifier注释来指定要注入的bean的名称。
 
 ---
+### Spring加载过程，容器怎么加载的？
 
+---
 ### Bean的生命周期？怎么创建bean的？
 Bean的生命周期包括以下阶段：
 1. 实例化：首先是实例化，当Spring容器启动时，会根据配置创建所有Bean实例。
@@ -163,8 +185,10 @@ spring创建bean主要分为三个步骤：
 3. 第三个就是初始化，会调用initializeBean方法，会执行aware接口中的方法，初始化方法，完成AOP代理。
 
 ---
+### Bean创建的过程
 
-###Spring中bean的作用域有哪些?作用是什么？如何配置bean的作用域？
+---
+###Spring中bean的作用域有哪些?作用是什么？如何配置bean的作用域？Spring Bean的线程安全问题？
 
 1. singleton：单例，只有一个bean实例，适用于工具类、配置类这种无状态的bean；
 2. prototype：每次请求都会创建一个新的bean实例，适合有状态的bean；
@@ -177,7 +201,9 @@ spring创建bean主要分为三个步骤：
 > 如何配置：用@Scope("prototype")注解配置bean的作用域。
 
 ---
+### BeanFactory和FactoryBean
 
+---
 ### Spring中的BeanFactory和ApplicationContext有什么区别？
 
 两个都是加载、管理bean的接口, 区别是：
@@ -240,7 +266,9 @@ spring创建bean主要分为三个步骤：
 - 或者使用@Lazy注解延迟加载，避免在bean初始化的时候立即创建依赖。
 
 ---
+### Spring三级缓存的数据结构是什么?
 
+---
 ### **spring中的事务管理是什么？它的作用是什么？如何实现？**
 
 事务管理是spring框架的一个特性，可以确保一组数据库操作要么全部成功，要么全部失败。保证数据的一致性。
@@ -279,8 +307,14 @@ spring创建bean主要分为三个步骤：
 所以事务传播行为是为了解决业务层方法之间互相调用的事务问题。
 
 ---
-### 事务的@Transactional注解，A事务调用B事务抛出异常之后，在默认事务传播机制下，会提交异常，因为rollback异常标志位已经被设置有值
+### 事务的@Transactional注解，A事务调用B事务，当B事务抛出异常之后，在默认事务传播机制下，会出现什么情况？
 
+如果A捕获了异常但是没有处理事务状态的话，A事务也会执行失败，因为默认事务传播行为是Required，会共享B方法里的事务，导致事务回滚并抛出异常。
+
+解决方法：
+ - 调整传播行为
+ - 在处理异常的代码块里显示管理事务状态
+ - 设置noRollbackFor={xxx.class}
 
 ---
 ### **说一下Spring中事务隔离级别有哪几种？**
@@ -319,3 +353,6 @@ Spring的事件驱动模型：
 ### BeanNameAware接口
 
 ApplicationContext向实例提供BeanName
+
+---
+### Spring框架中都用到了哪些设计模式？
