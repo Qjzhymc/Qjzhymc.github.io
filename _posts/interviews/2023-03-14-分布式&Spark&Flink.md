@@ -79,6 +79,10 @@ Paxos将节点分成三个角色：Proposer、Acceptor、Learner
 - Etcd：使用Raft一致性算法
 
 ---
+### spark运行机制？怎么读取文件？
+
+
+---
 ### 使用Spark有什么需要注意的地方？
 
 1. 内存管理：Spark依赖内存，配置集群的内存设置是很重要的
@@ -98,6 +102,34 @@ Paxos将节点分成三个角色：Proposer、Acceptor、Learner
 6. 利用广播变量来优化小表join大表的场景。 
 7. 缓存：Spark会缓存数据到内存，理解缓存是怎么工作的，并且什么时候需要使用缓存
 8. 资源分配：使用YARN管理资源。Spark允许为特定任务分配资源。理解怎么分配资源
+
+### reduceByKey与groupByKey有什么区别？
+1. reduceByKey包含了分组和聚合两个操作，groupByKey只是分组；所以一般groupByKey之后还会接一个map操作，对分组后的每个组进行聚合。
+2. 而且reduceByKey在shuffle之前对分区内相同的key的数据集会先进行预聚合，性能会比较高。
+
+```scala
+val words = Array("one", "two", "two", "three", "three", "three")
+val wordPairsRDD = sc.parallelize(words).map(word => (word, 1))
+
+val wordCountsWithReduce = wordPairsRDD
+  .reduceByKey(_ + _)
+  .collect()
+
+val wordCountsWithGroup = wordPairsRDD
+  .groupByKey()
+  .map(t => (t._1, t._2.sum))
+  .collect()
+```
+
+---
+### spark RDD
+RDD是Spark的弹性分布式数据集，表示一个元素集合，RDD里的数据可以分布在不同的节点上。
+
+核心特性：
+1. 不可变：对RDD做转换之后会生成新的RDD；
+2. RDD的数据是分布在不同分区的，每个分区分布在集群不同的节点上；
+3. RDD有自动的容错机制，假设某个分区数据丢失，还是可以重新计算，重建出来；
+4. RDD支持很多操作，比如map、filter、union、groupByKey、reduceByKey
 
 ---
 ### Spark广播怎么使用？Spark需要join一个大表和一个小表时应该怎么优化使用？
@@ -119,6 +151,11 @@ result = large_table.map(lambda x: (x[0], (x[1], broadcast_table.value.get(x[0])
 ```
 
 > 在join操作时，也可以手动广播小表，显示调用broadcast(smallDF)函数；spark.sql.autoBroadcastJoinThreshold广播阈值参数设置小表大小阈值；如果小表还是很大，但还是想广播，可以压缩小表；
+
+---
+### Spark中大表join小表怎么操作
+
+可以把小表数据变成广播变量，这样每个executor都有小表的数据，然后再大表数据处理的时候，根据大表数据的key从小表广播变量里找对应的数据。
 
 ---
 ### Spark遇到数据倾斜怎么处理？
@@ -143,6 +180,16 @@ rdd.mapPartitions(iter => Array(iter.size).iterator).collect().foreach(println)
 3. 自定义分区器：通过继承Partitioner类重写getPartition(key: Any):Int方法实现自定义的分区逻辑，更灵活控制数据分布
 4. 过滤异常数据：如果数据倾斜是因为有异常数据，比如超大key或脏数据，可以直接过滤这些数据
 7. 广播变量：当进行大表与小表的join操作时，可以广播小表数据，避免Shuffle操作。
+
+---
+### 数据倾斜？
+1.现象：绝大多数task执行很快，某个task执行很慢
+2.发生原理：在进行shuffle的时候，必须将相同的key拉到同一个节点上处理，比如按key聚合或join操作，此时如果某个数据量很大的话，就会发生数据倾斜。
+3.定位导致倾斜的代码：可以再yarn-cluster上的spark web ui上查看task执行情况，耗时，数据量等。
+一般只要看到Spark代码中出现了一个shuffle类算子（比如group by语句），那么就可以判定，以那个地方为界限划分出了前后两个stage。
+4.查看key的分布情况：可以在Spark作业中加入查看key分布的代码，比如RDD.countByKey()。
+5.采用随机前缀：将这个key对应的每条数据加随机前缀，将分散后的key分散到不同节点上，再join一起。
+
 
 ---
 ### 使用随机前缀解决步骤
@@ -256,6 +303,19 @@ Spark有很多可以调优的配置参数，以下是一些常用的参数：
 以上是Spark中常用的一些调优参数，可以根据具体场景进行调整，以达到最优的性能和效果。
 
 ---
+### 作业优化问题？
+
+---
+### 有没有遇到spark任务调优问题？
+**会有哪些问题：**
+- 某个节点OOM了；
+- 执行时间很慢；
+
+**问题如何解决：**
+- 查看task执行的日志，耗时、数据量。
+- 然后判断是发生了什么问题，是数据倾斜、还是网络问题、还是外部IO阻塞的问题。
+
+---
 ### Spark的部署和集群管理？
 
 ---
@@ -284,6 +344,16 @@ shuffle影响性能的核心原因
 2. 网络传输：数据需跨节点传输
 3. 序列化开销：数据序列化和反序列化
 4. 内存压力：聚合操作需大量内存
+
+---
+### 为什么有shuffle
+
+**什么是shuffle：**
+shuffle就是把多个节点上的同一个key，拉取到同一个节点上，进行聚合或join操作，比如reduceByKey，join操作，都会触发shuffle操作。
+
+**为什么会有shuffle：**
+因为RDD是分布式数据集，数据分布在多个节点上，如果要执行聚合就得把其他节点上的数据通过网络拉取到一起进行操作。
+
 
 ---
 ### 描述Spark Shuffle的演变历程，并比较不同shuffle实现的优缺点
