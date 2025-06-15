@@ -223,6 +223,15 @@ spring创建bean主要分为三个步骤：
 > 如何配置：用@Scope("prototype")注解配置bean的作用域。
 
 ---
+### Bean的几种回调机制
+1. @PostConstruct
+2. 实现InitializingBean接口的afterPropertiesSet方法
+3. 在@Bean(init-method="xxx")中指定初始化方法
+4. 实现BeanPostProcessor接口的postProcessBeforeInitialization方法和postProcessAfterInitialization方法，postProcessBeforeDestroy方法和postProcessAfterDestroy方法。
+
+> 只有BeanPostProcessor接口的那几个方法是全局回调的，也就是所有Bean在初始化或销毁时都会执行。
+
+---
 ### BeanFactory和FactoryBean
 1. BeanFactory是Bean工厂，负责管理Bean的生命周期，可以通过BeanFactory查找Bean
 2. FactoryBean是一种特殊的Bean，用于封装复杂对象的创建逻辑
