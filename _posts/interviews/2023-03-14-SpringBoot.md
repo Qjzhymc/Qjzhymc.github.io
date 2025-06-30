@@ -52,14 +52,14 @@ AOP会将一些通用的功能抽取出来封装到一个可重用模块，这�
 
 ---
 ### 静态代理和动态代理的区别？静态代理怎么写？动态代理怎么写？
-1. 静态代理的代理类**在编译器手动编写**，动态代理的代理类是**在运行时动态生成的**；
+1. 静态代理的代理类**在编译期手动编写**，动态代理的代理类是**在运行时动态生成的**；
 2. 静态代理一般是通过实现相同的接口创建代理类。动态代理可以基于接口也可以基于类创建代理类；
 3. jdk动态代理是通过实现InvocationHandler接口创建对应的handler类，然后通过Proxy.newProxyInstance创建代理类。
 4. 静态代理是，先创建一个目标类，再创建另一个代理类，两个类实现同一个接口，但是代理类的构造函数可以传入一个目标类作为参数，在代理类的先执行自定义操作，再调用目标类的对应方法，实现代理的逻辑
 
 动态代理怎么创建？
 1. 首先创建接口和实现类
-2. 然后创建InvocationHandler实现类，在invoke()方法中处理方法调用，可以再这里添加增强逻辑
+2. 然后创建InvocationHandler实现类，在invoke()方法中处理方法调用，可以在这里添加增强逻辑
 3. 然后使用的时候，可以通过Proxy.newProxyInstance(classLoader, class<>[], handler)创建代理对象，通过代理对象调用方法。
 
 ---
@@ -80,7 +80,14 @@ IOC容器的本质就是初始化BeanFactory和ApplicationContext，
 5. 最后，SpringBoot会启动Web服务器，监听HTTP请求。
 6. 运行应用：处理请求
 
-在启动过程中，SpringBoot会自动配置很多东西，简化了开发者的工作。
+1. 整个spring框架启动分为两部分，构造SpringBootApplication对象和执行run方法
+2. 核心注解@SpringBootConfiguration表示启动类为配置类，@EnableAutoConfiguration通过内部@Import注解AutoConfigurationImportSelector.class实现自动装配，@ComponentScan默认扫描当前目录及子目录下的bean。
+3. SpringBootApplication的构造方法主要做了几件事。
+ - 根据是否加载servlet类判断是否是web环境
+ - 获取所有初始化器，扫描所有META-INF/spring.factories下的ApplicationContextInitializer子类通过反射拿到实例，在spring实例启动前后做一些回调工作。
+ - 获取所有监听器，同2，也是扫描配置加载对应的类实例。
+ - 定位main方法
+4. run方法主要创建了配置环境、事件监听、启动应用上下文，其中refresh方法贯穿springbean的生命周期，执行bean的生命周期的前后置钩子方法，并且处理spring的注解标注的类。在onRefresh中通过Java代码构建出tomcat容器并启动。
 
 ---
 ### **Spring的自动装配原理？**
@@ -94,30 +101,20 @@ Spring的自动装配有三种方式：
 如果存在多个符合条件的bean，则需要使用@Qualifier注解来指定具体使用哪个bean进行注入。
 
 条件化配置（Conditional Configuration）：根据条件选择性地加载和应用配置
-
 自动配置类：是一种特殊的类，
-
 SpringBootStarter：
-
 类路径扫描和条件触发：
-
 自定义自动配置：
 
 ---
 ### SpringBoot常用的注解有哪些？讲讲原理？
-启动类会用的@SpringBootApplication，
-
-定义Bean的有@Configuration，@Bean，@Component
-
-依赖注入的有@Autowired，@Qualifier，
-
-web开发的有@RestController，@Service，@GetMapping、@PostMapping。还有@Entity实体类
-
-@Transactional表示方法需要事务管理，方法执行成功提交事务，发生异常回滚事务。
-
-还有@Value注入配置文件的属性值，@ConfigurationProperties批量绑定配置文件属性到java对象
-
-还有@Scheduled根据注解中的配置定期执行方法，@Async异步执行，方法放入线程池中异步执行。
+1. 启动类会用的@SpringBootApplication，
+2. 定义Bean的有@Configuration，@Bean，@Component
+3. 依赖注入的有@Autowired，@Qualifier，
+4. web开发的有@RestController，@Service，@GetMapping、@PostMapping。还有@Entity实体类
+5. @Transactional表示方法需要事务管理，方法执行成功提交事务，发生异常回滚事务。
+6. 还有@Value注入配置文件的属性值，@ConfigurationProperties批量绑定配置文件属性到java对象
+7. 还有@Scheduled根据注解中的配置定期执行方法，@Async异步执行，方法放入线程池中异步执行。
 
 ---
 ### @Data注解作用于哪个阶段
@@ -143,26 +140,23 @@ web开发的有@RestController，@Service，@GetMapping、@PostMapping。还有@
 > "注入"的意思就是声明一个对象，类似于 B b = new B(); 的过程，因为对象是直接从Spring容器中取过来的，所以叫"注入"，不用jvm自己创建。
 
 ---
-### @Resource 和 @Autoware注入有什么区别？
+### @Resource 和 @Autowired 注入有什么区别？
 @Resource 和 @Autowired 是用于依赖注入的注释。它们的主要区别在于：
-1. 来源不同：@Resource 是来自于Java EE规范的注释，而@Autowired 是Spring框架提供的注释。
-2. 自动装配方式不同：@Resource 默认按照名称进行自动装配，如果找不到对应名称的bean，则会按照类型进行匹配。而@Autowired 默认按照类型进行自动装配，如果找不到对应类型的bean，则会报错。
-3. 可以注入的类型不同：@Resource 可以注入任意类型的bean，而@Autowired 只能注入Spring容器中存在的bean。
-4. 配置方式不同：@Resource 需要指定name或者type属性来指定要注入的bean，而@Autowired 可以通过@Qualifier注释来指定要注入的bean的名称。
-
----
-### **Spring加载过程，容器怎么加载的？**
+1. 来源不同：@Resource 是来自于Java EE规范的注释，而 @Autowired 是Spring框架提供的注释。
+2. 自动装配方式不同：@Resource 默认按照名称进行自动装配，如果找不到对应名称的bean，则会按照类型进行匹配。而 @Autowired 默认按照类型进行自动装配，如果找不到对应类型的bean，则会报错。
+3. 可以注入的类型不同：@Resource 可以注入任意类型的bean，而 @Autowired 只能注入Spring容器中存在的bean。
+4. 配置方式不同：@Resource 需要指定name或者type属性来指定要注入的bean，而 @Autowired 可以通过 @Qualifier 注释来指定要注入的bean的名称。
 
 ---
 ### **Bean的生命周期？怎么创建bean的？bean的创建过程？**
 Bean的生命周期包括以下阶段/创建Bean的步骤：
-1. 实例化：首先是实例化，当Spring容器启动时，会根据配置创建所有Bean实例。会调用createBeanInstance方法，就是new一个对象
-2. 属性填充：然后是属性填充，Spring会通过依赖注入设置Bean的属性值。会调用populateBean方法，为new出来的对象填充属性
-3. 初始化：然后是初始化，会调用initializeBean方法，会执行aware接口中的方法，可以执行一些自定义的初始化逻辑，完成AOP代理。
+1. **实例化**：首先是实例化，当Spring容器启动时，会根据配置创建所有Bean实例。**会调用createBeanInstance方法**，就是new一个对象
+2. **属性填充**：然后是属性填充，**Spring会通过依赖注入设置Bean的属性值。会调用populateBean方法**，为new出来的对象填充属性
+3. **初始化**：然后是初始化，**会调用initializeBean方法，会执行aware接口中的方法，可以执行一些自定义的初始化逻辑**，完成AOP代理。
  - 可以实现InitializingBean接口的afterPropertiesSet方法
  - 还可以使用@PostConstruct注解
-4. 使用：初始化之后就可以使用了，Bean已经可以被其他对象使用。
-5. 销毁：Spring容器关闭时，它会销毁所有的Bean实例，同时调用Bean的销毁方法。销毁阶段可以执行一些自定义的清理逻辑。
+4. **使用**：初始化之后就可以使用了，Bean已经可以被其他对象使用。
+5. **销毁**：Spring容器关闭时，它会销毁所有的Bean实例，同时调用Bean的销毁方法。销毁阶段可以执行一些自定义的清理逻辑。
  - 可以实现DisposableBean接口的destroy方法
  - 还可以使用@PreDestroy注解
 
@@ -176,7 +170,7 @@ Bean的生命周期包括以下阶段/创建Bean的步骤：
 > 只有BeanPostProcessor接口的那几个方法是全局回调的，也就是所有Bean在初始化或销毁时都会执行。
 
 ---
-### Spring中bean的作用域有哪些?作用是什么？如何配置bean的作用域？Spring Bean的线程安全问题？
+### Spring中bean的作用域有哪些? 作用是什么？如何配置bean的作用域？Spring Bean的线程安全问题？
 1. singleton：单例，只有一个bean实例，适用于工具类、配置类这种无状态的bean；
 2. prototype：每次请求都会创建一个新的bean实例，适合有状态的bean；
 3. request：每个http请求都会创建一个新的bean实例，只在web应用中有效，适合与单个http请求相关的bean；

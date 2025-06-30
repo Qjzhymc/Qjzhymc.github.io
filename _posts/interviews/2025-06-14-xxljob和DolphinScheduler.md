@@ -101,7 +101,6 @@ Apache DolphinScheduler是一个分布式和可扩展的工作流协调平台，
 4. 所以如果需要新建一个插件，需要插件模块底下新增一个新插件的模块，然后对应的xxxTaskChannelFactory类，xxxTaskChannel类。然后需要把xxxTaskChannelFactory类路径写到META-INF/services/目录文件里，文件名字是接口的全限定名，里面的内容是实现类的全限定名。这样就可以找到这个插件。
 
 SPI：
-
 - 把服务接口和具体的服务实现分开，可以扩展。符合开闭原则，对扩展开放，对修改关闭。
 - ServiceLoader是java提供的一种加载服务实现的工具
 - 能够通过ServiceLoader.load(xxx.Class)加载的机制是通过Thread Context ClassLoader，也就是线程上下文类加载器，通过这个上下文加载器加载类，负责加载classpath上的类
@@ -115,3 +114,8 @@ SPI：
 4. 之后启动 netty 之后，创建服务端，绑定端口，接收到 rpc 的请求，会从 netty 的 channelHandler 中找到对应的方法，通过反射执行方法。
 5. 最后将执行结果返回发送方。
 
+---
+### 其他任务调度平台？选型原因？
+
+---
+### 任务如何分布式？
