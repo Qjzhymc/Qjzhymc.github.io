@@ -17,7 +17,7 @@ HDFS由一个NameNode和多个DataNode组成。
 2. DataNode是从节点，负责存储数据块。
 
 namespace是什么？
-存储在namenode节点中，指的是文件和目的的层次结构。
+存储在NameNode节点中，指的是文件和目录的层次结构。
 
 ---
 ### MapReduce运行流程原理？
