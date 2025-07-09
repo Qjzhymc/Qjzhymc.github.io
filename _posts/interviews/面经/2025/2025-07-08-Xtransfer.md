@@ -66,7 +66,7 @@ SpringBoot提供的接口，在Spring应用启动完成后执行一些自定义�
 ### redis如果hgetall会发生什么？
 会发生阻塞，建议使用hscan，可以分批获取数据
 
-![img.png](../../assets/img2/img.png)
+![redis_hash.png](../../../../assets/img2/redis_hash.png)
 
 ---
 ### Spark比MapReduce快的原因？
