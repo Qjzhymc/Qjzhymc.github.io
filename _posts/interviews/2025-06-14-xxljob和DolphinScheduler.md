@@ -115,6 +115,10 @@ SPI：
 5. 最后将执行结果返回发送方。
 
 ---
+### Dolphinscheduler如何加载所有插件的？
+通过TaskPluginManager里加载所有插件loadTaskPlugin(), 通过SPI机制，传入TaskChannelFactory接口类型，获取所有实现TaskChannelFactory接口的实现类，通过这个TaskChannelFactory工厂类create创建TaskChannel。创建具体的Task，在Task里执行handle方法，执行任务。
+
+---
 ### 其他任务调度平台？选型原因？
 1. Airflow：也可以编排DAG工作流，
 2. Quartz：没有界面，

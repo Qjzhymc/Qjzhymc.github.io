@@ -70,25 +70,6 @@ AOP会将一些通用的功能抽取出来封装到一个可重用模块，这�
 
 > 使用时，最好实现接口，使用JDK动态代理，更符合java标准。
 
----
-### **SpringBoot是如何启动的？启动流程**
-IOC容器的本质就是初始化BeanFactory和ApplicationContext，
-
-1. 加载配置文件：首先，SpringBoot会加载所有的配置文件，包括application.properties和application.yml等。初始化服务器端口、数据库连接
-2. 然后，SpringBoot会扫描所有的类，查找带有@SpringBootApplication注解的类。
-3. 创建应用上下文：然后，SpringBoot会创建一个Spring应用程序上下文，该上下文包含了所有的Bean定义。管理所有的bean和它们的依赖关系。
-4. SpringBoot会自动配置所有的Bean，包括数据源、Web服务器、日志等。
-5. 最后，SpringBoot会启动Web服务器，监听HTTP请求。
-6. 运行应用：处理请求
-
-1. 整个spring框架启动分为两部分，构造SpringBootApplication对象和执行run方法
-2. 核心注解@SpringBootConfiguration表示启动类为配置类，@EnableAutoConfiguration通过内部@Import注解AutoConfigurationImportSelector.class实现自动装配，@ComponentScan默认扫描当前目录及子目录下的bean。
-3. SpringBootApplication的构造方法主要做了几件事。
- - 根据是否加载servlet类判断是否是web环境
- - 获取所有初始化器，扫描所有META-INF/spring.factories下的ApplicationContextInitializer子类通过反射拿到实例，在spring实例启动前后做一些回调工作。
- - 获取所有监听器，同2，也是扫描配置加载对应的类实例。
- - 定位main方法
-4. run方法主要创建了配置环境、事件监听、启动应用上下文，其中refresh方法贯穿springbean的生命周期，执行bean的生命周期的前后置钩子方法，并且处理spring的注解标注的类。在onRefresh中通过Java代码构建出tomcat容器并启动。
 
 ---
 ### **Spring的自动装配原理？**
@@ -147,6 +128,19 @@ SpringBootStarter：
 2. 自动装配方式不同：@Resource 默认按照名称进行自动装配，如果找不到对应名称的bean，则会按照类型进行匹配。而 @Autowired 默认按照类型进行自动装配，如果找不到对应类型的bean，则会报错。
 3. 可以注入的类型不同：@Resource 可以注入任意类型的bean，而 @Autowired 只能注入Spring容器中存在的bean。
 4. 配置方式不同：@Resource 需要指定name或者type属性来指定要注入的bean，而 @Autowired 可以通过 @Qualifier 注释来指定要注入的bean的名称。
+
+---
+### **SpringBoot是如何启动的？启动流程**
+IOC容器的本质就是初始化BeanFactory和ApplicationContext，
+
+1. 整个spring框架启动分为两部分，构造SpringBootApplication对象和执行run方法
+2. 核心注解@SpringBootConfiguration表示启动类为配置类，@EnableAutoConfiguration通过内部@Import注解AutoConfigurationImportSelector.class实现自动装配，@ComponentScan默认扫描当前目录及子目录下的bean。
+3. SpringBootApplication的构造方法主要做了几件事。
+- 根据是否加载servlet类判断是否是web环境
+- 获取所有初始化器，扫描所有META-INF/spring.factories下的ApplicationContextInitializer子类通过反射拿到实例，在spring实例启动前后做一些回调工作。
+- 获取所有监听器，同2，也是扫描配置加载对应的类实例。
+- 定位main方法
+4. run方法主要创建了配置环境、事件监听、启动应用上下文，其中refresh方法贯穿springbean的生命周期，执行bean的生命周期的前后置钩子方法，并且处理spring的注解标注的类。在onRefresh中通过Java代码构建出tomcat容器并启动。
 
 ---
 ### **Bean的生命周期？怎么创建bean的？bean的创建过程？**
