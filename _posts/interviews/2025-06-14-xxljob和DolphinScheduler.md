@@ -94,7 +94,7 @@ Apache DolphinScheduler是一个分布式和可扩展的工作流协调平台，
 1. DolphinScheduler dao 层只支持 mysql 和 postgresql，扩展了一个新的达梦数据源；
 2. dolphin内置有20多种任务类型，新扩展了自定义的一个任务类型task。
 
-开发 SPI 插件流程：
+开发 SPI 插件流程，加载插件过程：
 1. 首先框架本身已经有了一个服务接口，就是TaskChannelFactory接口；
 2. 在worker启动时，在TaskPluginManager中，加载所有遵循了SPI规则的插件，
 3. 加载流程是，根据服务接口TaskChannelFactory接口类型，用ServiceLoader.load(spiClass)获取所有实现了该接口的类，也就是获取所有插件的Factory类，通过Factory类创建TaskChannel(然后通过TaskChannel创建Task)
@@ -113,10 +113,6 @@ SPI：
 3. 将该方法的 invoker 注册到 netty 服务器的 map 中。
 4. 之后启动 netty 之后，创建服务端，绑定端口，接收到 rpc 的请求，会从 netty 的 channelHandler 中找到对应的方法，通过反射执行方法。
 5. 最后将执行结果返回发送方。
-
----
-### Dolphinscheduler如何加载所有插件的？
-通过TaskPluginManager里加载所有插件loadTaskPlugin(), 通过SPI机制，传入TaskChannelFactory接口类型，获取所有实现TaskChannelFactory接口的实现类，通过这个TaskChannelFactory工厂类create创建TaskChannel。创建具体的Task，在Task里执行handle方法，执行任务。
 
 ---
 ### 其他任务调度平台？选型原因？
