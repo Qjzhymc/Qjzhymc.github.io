@@ -146,10 +146,9 @@ SpringBootStarter：
 
 ---
 ### **Bean的生命周期？怎么创建bean的？bean的创建过程？**
-Bean的生命周期包括以下阶段/创建Bean的步骤：
 1. **实例化**：首先是实例化，当Spring容器启动时，会根据配置创建所有Bean实例。**会调用createBeanInstance方法**，就是new一个对象
 2. **属性填充**：然后是属性填充，**Spring会通过依赖注入设置Bean的属性值。会调用populateBean方法**，为new出来的对象填充属性
-3. **初始化**：然后是初始化，**会调用initializeBean方法，会执行aware接口中的方法，可以执行一些自定义的初始化逻辑**，完成AOP代理。
+3. **初始化**：然后是初始化，**会调用initializeBean方法，会执行aware接口中的方法，可以执行一些自定义的初始化逻辑**。
  - 可以实现InitializingBean接口的afterPropertiesSet方法
  - 还可以使用@PostConstruct注解
 4. **使用**：初始化之后就可以使用了，Bean已经可以被其他对象使用。
@@ -159,6 +158,7 @@ Bean的生命周期包括以下阶段/创建Bean的步骤：
 
 ---
 ### Bean的几种回调机制
+Aware接口-> BeanPostProcessor -> InitializingBean(afterPropertiesSet) -> init-method -> BeanPostProcessor -> 使用中 -> DisposableBean(destroy) -> destroy-method
 1. @PostConstruct
 2. 实现InitializingBean接口的afterPropertiesSet方法
 3. 在@Bean(init-method="xxx")中指定初始化方法
