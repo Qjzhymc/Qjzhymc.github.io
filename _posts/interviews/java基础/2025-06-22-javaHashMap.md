@@ -24,7 +24,7 @@ tags:
 
 区别：
 * HashMap不是线程安全的，多个线程同时写入的话可能导致数据不一致或抛出异常；而ConcurrentHashMap是线程安全的；
-* HashMap在单线程环境中性能比较高，因为没有锁的开销；ConcurrentHashMap在多线程环境中性能更高，因为它通过CAS操作减少了锁的粒度；
+* HashMap在单线程环境中性能比较高，因为没有锁的开销；ConcurrentHashMap在多线程环境中性能更高，因为它通过CAS操作减小了锁的粒度；
 * 底层实现上，两个都是使用数组+链表或红黑树，但是ConcurrentHashMap增加了分段锁或CAS操作；
 * 扩容的时候ConcurrentHashMap扩容时支持并发操作，可以同时对多个段进行扩容；
 * HashMap在迭代过程中如果有修改会抛出ConcurrentModificationException异常；

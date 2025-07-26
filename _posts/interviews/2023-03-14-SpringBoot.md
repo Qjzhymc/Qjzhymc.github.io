@@ -133,19 +133,16 @@ SpringBootStarter：
 
 ---
 ### **SpringBoot是如何启动的？启动流程**
-IOC容器的本质就是初始化BeanFactory和ApplicationContext，
-
-1. 整个spring框架启动分为两部分，构造SpringBootApplication对象和执行run方法
-2. @SpringBootApplication包含三个核心注解@SpringBootConfiguration表示启动类为配置类，@EnableAutoConfiguration通过内部@Import注解AutoConfigurationImportSelector.class实现自动装配，@ComponentScan默认扫描当前目录及子目录下的bean。
-3. SpringBootApplication的构造方法主要做了几件事。
-- 根据是否加载servlet类判断是否是web环境
-- 获取所有初始化器，获取实现ApplicationContextInitializer的子类，在spring实例启动前后做一些回调工作。
-- 获取所有监听器，可以监听启动过程中的各种事件。同2，也是扫描配置加载对应的类实例。
-- 定位main方法
-4. 然后执行run方法
-5. run方法主要创建了配置环境、事件监听、打印banner、启动应用上下文，refreshContext里调用refresh方法，其中refresh方法执行bean的生命周期的前后置钩子方法，并且处理spring的注解标注的类。
-6. refresh是Spring应用启动的关键流程，完成了从加载配置、创建Bean工厂、加载BeanDefination、注册Bean、初始化Bean到最终发布就绪事件的全过程，是Spring应用启动的关键流程。
-启动或刷新Spring容器，完成容器初始化和Bean加载。
+1. 启动类有一个 @SpringBootApplication 注解，包含三个核心注解@SpringBootConfiguration表示启动类为配置类，@EnableAutoConfiguration通过内部@Import注解AutoConfigurationImportSelector.class实现自动装配，@ComponentScan默认扫描当前目录及子目录下的bean。
+2. 启动的时候会执行SpringApplication的run方法。
+- 判断是否是web环境，启动对应的ApplicationContext上下文环境。
+- 初始化 Environment 和各种 ApplicationListener 监听器，可以监听启动过程中的各种事件
+- 打印banner
+- 加载配置类，触发自动配置，核心实现是在AutoConfigurationImportSelector类中，会从spring.factories文件中读取自动配置类，然后加载相应的自动配置。
+- 然后再执行prepareContext、refreshContext方法，在refreshContext方法里，会调用refresh方法，会加载BeanDefination、注册Bean、初始化Bean、最后加载 Bean 到 BeanFactory 中。也会执行Bean生命周期的一些回调方法，钩子方法。
+3. 启动内嵌的 web 服务器tomcat
+4. 执行一些回调方法，ApplicationRunner、CommandLineRunner接口的方法，
+5. 最后发送一个启动完成的事件，通知所有监听器应用启动完成，可以接收请求了。
 
 ---
 ### **Bean的生命周期？怎么创建bean的？bean的创建过程？**
